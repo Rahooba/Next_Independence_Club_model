@@ -1,0 +1,30 @@
+{
+  "name": "independence-club-model",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.25.0",
+    "next": "16.2.10",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "recharts": "^3.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.2.10",
+    "typescript": "6.0.3"
+  }
+}
