@@ -60,7 +60,7 @@ export default function RegisterPage() {
 
     const { data: codeData, error: codeError } = await supabase
       .from('auth_codes')
-      .select('role, is_used')
+      .select('role')
       .eq('code', accessCode)
       .maybeSingle()
 
@@ -70,11 +70,8 @@ export default function RegisterPage() {
       return
     }
 
-    if (codeData.is_used) {
-      setError(t('auth.register.usedCode'))
-      setLoading(false)
-      return
-    }
+    // أكواد الأدوار (الطالب والمعلم) ثابتة وقابلة لإعادة الاستخدام دائمًا
+    // لأي عدد من الحسابات، لذلك لا يوجد أي تحقق من "is_used" هنا بعد الآن.
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -107,10 +104,8 @@ export default function RegisterPage() {
         return
       }
 
-      await supabase
-        .from('auth_codes')
-        .update({ is_used: true })
-        .eq('code', accessCode)
+      // لا نُعلّم أي كود كـ "مستخدم" — الكود يمثّل الرول نفسه
+      // ويظل صالحًا لإنشاء أي عدد من الحسابات بنفس الرول.
 
       router.push('/home')
     }
