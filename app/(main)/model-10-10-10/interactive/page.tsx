@@ -87,6 +87,8 @@ export default function InteractivePage() {
 
   useEffect(() => {
     if (!user || !profile) return;
+    // المعلم/الأدمن مشرف فقط: ما بيتسجّل كطالب في الغرفة
+    if (profile.role === 'teacher' || profile.role === 'admin') return;
     const upsertPresence = async () => {
       const { error } = await supabase.from('session_presence').upsert({
         session_id: ROOM_SESSION_ID, student_id: user.id,
@@ -99,18 +101,23 @@ export default function InteractivePage() {
   }, [user, profile]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isTeacherOrAdmin) return;
     const handleLeave = async () => {
       await supabase.from('session_presence').delete().eq('student_id', user.id).eq('session_id', ROOM_SESSION_ID);
     };
     window.addEventListener('beforeunload', handleLeave);
     return () => { window.removeEventListener('beforeunload', handleLeave); handleLeave(); };
-  }, [user]);
+  }, [user, isTeacherOrAdmin]);
 
   useEffect(() => {
     const fetchSessionPresence = async () => {
       const { data, error } = await supabase.from('session_presence').select('*').eq('session_id', ROOM_SESSION_ID);
-      if (data && !error) setSessionPresence(data);
+      if (data && !error) {
+        // استبعاد أي صف قديم يخص معلم/أدمن (اتسجّل قبل التعديل)
+        const { data: staff } = await supabase.from('profiles').select('id').in('role', ['teacher', 'admin']);
+        const staffIds = new Set((staff || []).map((x: any) => x.id));
+        setSessionPresence(data.filter((x: any) => !staffIds.has(x.student_id)));
+      }
     };
     fetchSessionPresence();
     const channel = supabase.channel('session_presence_changes')
@@ -285,7 +292,7 @@ export default function InteractivePage() {
   const myHelpCount = myHelpRecord?.count || 0;
 
   const handleRequestHelp = async () => {
-    if (!user || !profile) return;
+    if (!user || !profile || isTeacherOrAdmin) return; // المعلم مشرف: مايطلبش مساعدة
     const currentRecord = helpRequests.find(hr => hr.student_id === user.id);
     const currentCount = currentRecord?.count || 0;
     if (currentCount >= 4) return;
@@ -477,7 +484,7 @@ export default function InteractivePage() {
             sessionPresence.map((sp) => {
               const helpRecord = helpRequests.find(hr => hr.student_id === sp.student_id);
               const helpCount = helpRecord?.count || 0;
-              const isMyCard = sp.student_id === user?.id;
+              const isMyCard = !isTeacherOrAdmin && sp.student_id === user?.id;
               const helpLevel = helpCount >= 4 ? 'danger' : helpCount > 0 ? 'warn' : 'ok';
               return (
                 <motion.div key={sp.student_id}

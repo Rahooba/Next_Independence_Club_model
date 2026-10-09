@@ -32,6 +32,9 @@ const navIconMap: Record<string, React.ReactNode> = {
   '/about': <BookOpen size={18} strokeWidth={2} />,
 };
 
+// أقل من العرض ده = شكل الموبايل (يشمل التابلت بالطول والعرض)
+const NAV_BREAKPOINT = 1100;
+
 const Header = () => {
   const pathname = usePathname();
   const { user, profile, loading } = useUser();
@@ -46,7 +49,7 @@ const Header = () => {
 
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
-      if (window.innerWidth > 768) {
+      if (window.innerWidth >= NAV_BREAKPOINT) {
         setIsMenuOpen(false);
       }
     };
@@ -78,8 +81,9 @@ const Header = () => {
     return null;
   }
 
-  const isMobile = windowWidth < 768;
-  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  // التابلت بياخد نفس شكل الموبايل (همبرجر + درج جانبي)
+  const isMobile = windowWidth < NAV_BREAKPOINT;
+  const isTablet = false;
 
   const navItems = [
     { path: '/home', label: t('nav.home') },

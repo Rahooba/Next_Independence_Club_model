@@ -95,6 +95,8 @@ export default function SupportLadderInteractivePage() {
 
   useEffect(() => {
     if (!user || !profile) return;
+    // المعلم/الأدمن مشرف فقط: ما بياخدش كوبونات ولا بيتسجّل كطالب
+    if (profile.role === 'teacher' || profile.role === 'admin') return;
     const sync = async () => {
       const { data: existing } = await supabase.from('help_coupons').select('*').eq('student_id', user.id).maybeSingle();
       if (!existing) {
@@ -126,6 +128,7 @@ export default function SupportLadderInteractivePage() {
   }, [user, profile]);
 
   const canSeeAll = profile?.role === 'teacher' || profile?.role === 'admin';
+  const isStaff = canSeeAll; // مشرف: يتابع ويجدّد بس، مايستخدمش كوبونات
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -134,7 +137,14 @@ export default function SupportLadderInteractivePage() {
       let q = supabase.from('help_coupons').select('*');
       if (!canSeeAll) q = q.eq('student_id', user.id);
       const { data } = await q;
-      if (data) setHelpCoupons(data);
+      if (data) {
+        // استبعاد أي صف قديم يخص معلم/أدمن (اتسجّل قبل التعديل)
+        const { data: staff } = canSeeAll
+          ? await supabase.from('profiles').select('id').in('role', ['teacher', 'admin'])
+          : { data: [] as any[] };
+        const staffIds = new Set((staff || []).map((x: any) => x.id));
+        setHelpCoupons(data.filter((c: any) => !staffIds.has(c.student_id)));
+      }
     };
     fetch();
     const ch = supabase.channel('help_coupons_changes')
@@ -160,7 +170,7 @@ export default function SupportLadderInteractivePage() {
   const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrUrl)}&color=0F172A&bgcolor=FFFFFF&qzone=2`;
 
   const useCoupon = async (sid: string) => {
-    if (!user) return;
+    if (!user || isStaff || sid !== user.id) return;
     const c = helpCoupons.find(x => x.student_id === sid);
     if (!c || c.coupons_remaining <= 0) return;
     const rem = c.coupons_remaining - 1;
@@ -267,7 +277,7 @@ export default function SupportLadderInteractivePage() {
         )}
 
         {/* Token Counter — floating glass card (only for logged-in users) */}
-        {user && (
+        {user && !isStaff && (
           <motion.div
             className="sl-i-token-bar"
             initial={{ opacity: 0, y: 16 }}
@@ -307,7 +317,7 @@ export default function SupportLadderInteractivePage() {
             <div style={{ textAlign: 'center', gridColumn: '1 / -1', padding: '48px', color: 'var(--text-muted)' }}>{t('supportLadder.interactive.noStudents')}</div>
           ) : (
             visibleCoupons.map((coupon) => {
-              const isMine = coupon.student_id === user.id;
+              const isMine = !isStaff && coupon.student_id === user.id;
               return (
                 <motion.div key={coupon.student_id} variants={itemV}>
                   <div className={`sl-i-student-card ${isMine ? 'sl-i-student-card--mine' : ''}`}>
@@ -331,7 +341,7 @@ export default function SupportLadderInteractivePage() {
                       ))}
                     </div>
 
-                    {(profile?.role === 'teacher' || isMine) && (() => {
+                    {(isStaff || isMine) && (() => {
                       const done = stepsByStudent.get(coupon.student_id)?.size ?? 0;
                       return (
                         <div style={{ margin: '10px 0 4px', textAlign: 'center' }}>
@@ -357,7 +367,7 @@ export default function SupportLadderInteractivePage() {
                           {t('supportLadder.interactive.useCoupon')}
                         </button>
                       )}
-                      {profile?.role === 'teacher' && (
+                      {isStaff && (
                         <button className="sl-i-student-btn sl-i-student-btn--renew" onClick={() => resetCoupon(coupon.student_id)}>
                           <RefreshCcw size={13} /> {t('supportLadder.interactive.renew')}
                         </button>
@@ -432,7 +442,7 @@ export default function SupportLadderInteractivePage() {
               style={{
                 background: tt.kind === 'coupon' ? '#E76F51' : '#2A9D8F', color: 'white',
                 padding: '10px 16px', borderRadius: 14, fontWeight: 700, fontSize: '0.88rem',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.18)', maxWidth: 280,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.18)', maxWidth: 'min(280px, calc(100vw - 32px))',
               }}
             >
               {tt.text}
@@ -465,7 +475,7 @@ export default function SupportLadderInteractivePage() {
               <p className="sl-i-modal-desc">{t('supportLadder.interactive.qrDesc')}</p>
 
               <motion.div className="sl-i-modal-qr-wrap" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15, type: 'spring' }}>
-                <img src={qrImg} alt="QR Code" style={{ width: 200, height: 200, display: 'block', borderRadius: 10 }} />
+                <img src={qrImg} alt="QR Code" style={{ width: '100%', maxWidth: 200, height: 'auto', aspectRatio: '1 / 1', display: 'block', borderRadius: 10 }} />
               </motion.div>
 
               <div className="sl-i-modal-url">{qrUrl}</div>

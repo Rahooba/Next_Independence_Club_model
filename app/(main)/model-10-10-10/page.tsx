@@ -107,12 +107,7 @@ export default function Model101010Page() {
 
       <div className="m10-new-inner">
 
-        {/* ── Back ── */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="m10-back2">
-          <Link href="/home" className="m10-back2-link">
-            <ArrowLeft size={15} /> {t('nav.backToHome')}
-          </Link>
-        </motion.div>
+     
 
         {/* ── HERO — Split layout ── */}
         <motion.section className="m10-hero2" variants={stagger} initial="hidden" animate="show">

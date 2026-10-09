@@ -348,7 +348,7 @@ export default function ProfilePage() {
                     color: '#fff', fontSize: '1.3rem', fontWeight: '700',
                     fontFamily: 'inherit', textAlign: 'center',
                     outline: 'none', backdropFilter: 'blur(8px)',
-                    width: '280px',
+                    width: '280px', maxWidth: '100%',
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName()
@@ -460,7 +460,7 @@ export default function ProfilePage() {
           variants={stagger}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
             gap: '20px',
           }}
         >

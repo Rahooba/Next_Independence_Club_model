@@ -38,6 +38,8 @@ export default function SilentCardsInteractivePage() {
   // Auto-insert user into silent_cards if not exists
   useEffect(() => {
     if (!user || !profile) return;
+    // المعلم/الأدمن مشرف فقط: ما بيتسجّل كطالب ولا بياخد بطاقة
+    if (profile.role === 'teacher' || profile.role === 'admin') return;
     const insertCardIfNotExists = async () => {
       const { data: existing } = await supabase
         .from('silent_cards')
@@ -71,7 +73,12 @@ export default function SilentCardsInteractivePage() {
   useEffect(() => {
     const fetchSilentCards = async () => {
       const { data, error } = await supabase.from('silent_cards').select('*');
-      if (data && !error) setSilentCards(data);
+      if (data && !error) {
+        // استبعاد أي صف قديم يخص معلم/أدمن (اتسجّل قبل التعديل)
+        const { data: staff } = await supabase.from('profiles').select('id').in('role', ['teacher', 'admin']);
+        const staffIds = new Set((staff || []).map((x: any) => x.id));
+        setSilentCards(data.filter((c: any) => !staffIds.has(c.student_id)));
+      }
     };
     fetchSilentCards();
     const channel = supabase
@@ -80,13 +87,15 @@ export default function SilentCardsInteractivePage() {
         fetchSilentCards();
         // Teacher hears a sound (by card colour) when a student picks a card
         const picked = payload?.new?.selected_card;
-        if (roleRef.current === 'teacher' && picked && payload?.old?.selected_card !== picked) {
+        if ((roleRef.current === 'teacher' || roleRef.current === 'admin') && picked && payload?.old?.selected_card !== picked) {
           if (picked === 'green' || picked === 'yellow' || picked === 'red') playSound(picked);
         }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const isStaff = profile?.role === 'teacher' || profile?.role === 'admin';
 
   const stats: Record<string, number> = silentCards.reduce(
     (acc: Record<string, number>, s) => {
@@ -108,7 +117,8 @@ export default function SilentCardsInteractivePage() {
   );
 
   const handleCardSelect = async (studentId: string, cardType: string) => {
-    if (!user) return;
+    if (!user || isStaff) return; // المعلم مشرف: مايختارش بطاقات
+    if (studentId !== user.id) return; // الطالب يختار لنفسه بس
     const card = silentCards.find(c => c.student_id === studentId);
     if (!card || card.selected_card) return;
 
@@ -193,7 +203,7 @@ export default function SilentCardsInteractivePage() {
           transition={{ delay: 0.15, duration: 0.5, ease }}
         >
           {/* Stats panel — teachers only */}
-          {profile?.role === 'teacher' && (
+          {isStaff && (
             <div className="sc-i-stats">
               <div className="sc-i-stats-title">
                 <CircleAlert size={15} /> {t('silentCards.interactive.teacherResponse')}
@@ -216,7 +226,7 @@ export default function SilentCardsInteractivePage() {
           )}
 
           {/* Teacher response */}
-          {profile?.role === 'teacher' && (
+          {isStaff && (
             <div className={`sc-i-response ${responseBg[teacherType || 'neutral'] || 'sc-i-response--neutral'}`}>
               <div className="sc-i-response-title">
                 <Send size={15} /> {t('silentCards.interactive.teacherResponse')}
@@ -245,7 +255,7 @@ export default function SilentCardsInteractivePage() {
 
           {/* Actions */}
           <div className="sc-i-actions">
-            {user && profile?.role === 'teacher' && (
+            {user && isStaff && (
               <motion.button className="sc-i-act-btn sc-i-act-btn--danger" onClick={handleResetAll} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <RefreshCcw size={14} /> {t('silentCards.interactive.resetAll')}
               </motion.button>
@@ -272,10 +282,10 @@ export default function SilentCardsInteractivePage() {
             <div className="sc-i-login">{t('silentCards.interactive.noStudents')}</div>
           ) : (
             silentCards
-              .filter(card => profile?.role === 'teacher' || card.student_id === user.id)
+              .filter(card => isStaff || card.student_id === user.id)
               .map((card) => {
                 const active = CARD_OPTIONS.find(o => o.key === card.selected_card);
-                const isMyCard = card.student_id === user.id;
+                const isMyCard = !isStaff && card.student_id === user.id;
                 return (
                   <motion.div
                     key={card.student_id}
@@ -309,6 +319,7 @@ export default function SilentCardsInteractivePage() {
                       )}
                     </div>
 
+                    {!isStaff && (
                     <div className="sc-i-card-btns">
                       {CARD_OPTIONS.map(opt => (
                         <motion.button
@@ -323,6 +334,7 @@ export default function SilentCardsInteractivePage() {
                         </motion.button>
                       ))}
                     </div>
+                    )}
 
                     {card.selected_at && (
                       <div className="sc-i-student-time">

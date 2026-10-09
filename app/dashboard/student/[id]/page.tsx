@@ -151,10 +151,10 @@ const StudentDetailPage = () => {
     return (
       <div>
         <style>{`@keyframes shimmer { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }`}</style>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px' }}>
+        <div className="st-split" style={{ gap: '20px' }}>
           <div>
             <div style={{ height: '120px', background: tokens.skeleton, borderRadius: '16px', animation: 'shimmer 1.5s infinite', marginBottom: '20px' }} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="st-pair" style={{ gap: '14px' }}>
               {[...Array(4)].map((_, i) => (
                 <div key={i} style={{ height: '140px', background: tokens.skeleton, borderRadius: '16px', animation: 'shimmer 1.5s infinite' }} />
               ))}
@@ -233,13 +233,13 @@ const StudentDetailPage = () => {
       </motion.div>
 
       {/* Main content: 2 columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
+      <div className="st-split st-split--main" style={{ gap: '20px', alignItems: 'start' }}>
         {/* Model cards */}
         <div>
           <h2 style={{ fontSize: '0.92rem', fontWeight: '700', color: tokens.primaryText, marginBottom: '14px', transition: 'color 0.2s' }}>
             {t('student.modelDetails') || 'تفاصيل النماذج'}
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div className="st-pair" style={{ gap: '14px' }}>
             {modelKeys.map((model, i) => {
               const color = getModelColor(model);
               const helpCount = getStatValue(model, 'help_requests_count');

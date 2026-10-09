@@ -68,8 +68,10 @@ const BeautifulMistakesInteractive = () => {
   const isMobile = isMounted && windowWidth < 768;
   const isTablet = isMounted && windowWidth >= 768 && windowWidth < 1024;
 
+  const isStaff = profile?.role === 'teacher' || profile?.role === 'admin';
+
   const getDisplayName = (mistake: { real_name: string; optional_name: string | null }) => {
-    if (profile?.role === 'teacher' && mistake.optional_name) {
+    if (isStaff && mistake.optional_name) {
       return `${mistake.optional_name} (${mistake.real_name})`;
     }
     return mistake.real_name;
@@ -115,6 +117,7 @@ const BeautifulMistakesInteractive = () => {
   }, []);
 
   const addMistake = async (realName: string, optionalName: string, mistakeDescription: string) => {
+    if (isStaff) return; // المعلم مشرف: مايضيفش أخطاء
     const { data, error } = await supabase
       .from('beautiful_mistakes')
       .insert({
@@ -221,7 +224,7 @@ const BeautifulMistakesInteractive = () => {
   };
 
   const handleSelectMistake = (id: string) => {
-    if (profile?.role === 'teacher') {
+    if (isStaff) {
       setTeacherSelectedMistake(id);
     }
   };
@@ -252,11 +255,13 @@ const BeautifulMistakesInteractive = () => {
       >
         {/* Left Column - Submit + Stats */}
         <motion.div className="bm-i-left" variants={itemVariants}>
-          <div className="bm-i-panel bm-i-submit">
-            <MistakeCard onAddMistake={addMistake} />
-          </div>
+          {!isStaff && (
+            <div className="bm-i-panel bm-i-submit">
+              <MistakeCard onAddMistake={addMistake} />
+            </div>
+          )}
 
-          {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+          {isStaff && (
             <div className="bm-i-panel">
               <div className="bm-i-stats">
                 <div className="bm-i-stat">
@@ -302,7 +307,7 @@ const BeautifulMistakesInteractive = () => {
             noMistakesLabel={t('beautifulMistakes.interactive.noMistakes')}
             noMistakesDesc={t('beautifulMistakes.interactive.noMistakesDesc')}
             isMobile={isMobile}
-            isTeacher={profile?.role === 'teacher'}
+            isTeacher={isStaff}
             teacherSelectedMistake={teacherSelectedMistake}
             onSelectMistake={handleSelectMistake}
             onDeleteMistake={deleteMistake}
@@ -319,7 +324,7 @@ const BeautifulMistakesInteractive = () => {
             selectLabel={t('beautifulMistakes.interactive.selectMistakeOfWeek')}
             clearLabel={t('beautifulMistakes.interactive.clear')}
             isMobile={isMobile}
-            isTeacher={profile?.role === 'teacher'}
+            isTeacher={isStaff}
             hasTeacherSelection={!!teacherSelectedMistake}
             onSelectMistakeOfWeek={selectMistakeOfWeek}
             onClearMistakeOfWeek={clearMistakeOfWeek}
@@ -330,7 +335,7 @@ const BeautifulMistakesInteractive = () => {
             deleteBoardLabel={t('beautifulMistakes.interactive.deleteBoard')}
             backLabel={t('beautifulMistakes.interactive.backToExplanation')}
             isMobile={isMobile}
-            isTeacher={profile?.role === 'teacher'}
+            isTeacher={isStaff}
             onDeleteAll={deleteAllMistakes}
           />
         </motion.div>

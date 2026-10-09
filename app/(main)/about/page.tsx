@@ -325,12 +325,7 @@ const About = () => {
       <section className="about-hero">
         <div className="about-hero-inner">
           <motion.div variants={stagger} initial="hidden" animate="show">
-            <motion.div variants={fadeUp} style={{ marginBottom: 20 }}>
-              <Link href="/" className="about-back">
-                {dir === 'rtl' ? <ArrowRight size={14} strokeWidth={2} /> : <ArrowLeft size={14} strokeWidth={2} />}
-                {t('about.hero.back')}
-              </Link>
-            </motion.div>
+         
 
             <motion.div variants={fadeUp} className="about-hero-badge">
               <GraduationCap size={13} strokeWidth={2.5} />
