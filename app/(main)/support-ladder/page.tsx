@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useUser } from '@/hooks/useUser';
 import {
   ArrowLeft, ArrowRight, LifeBuoy, Zap, Clock,
   Lightbulb, BookOpen, Users, Search, GraduationCap,
@@ -18,6 +19,8 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 
 export default function SupportLadderPage() {
   const { t } = useTranslation();
+  const { profile } = useUser();
+  const modelCtaLabel = profile?.role === 'student' ? t('nav.joinModelWithTeacher') : t('nav.useModelWithStudents');
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
@@ -98,7 +101,7 @@ export default function SupportLadderPage() {
 
             <motion.div variants={fadeUp} className="sl-hero-actions">
               <Link href="/support-ladder/interactive" className="sl-hero-cta">
-                {t('nav.useModelWithStudents')} <ArrowRight size={16} />
+                {modelCtaLabel} <ArrowRight size={16} />
               </Link>
               <Link href="/home" className="sl-hero-ghost">
                 <ArrowLeft size={16} /> {t('common.backToHome')}
@@ -221,10 +224,10 @@ export default function SupportLadderPage() {
           <div className="sl-cta-section-glow sl-cta-section-glow--1" />
           <div className="sl-cta-section-glow sl-cta-section-glow--2" />
           <div className="sl-cta-section-content">
-            <h2 className="sl-cta-section-title">{t('nav.useModelWithStudents')}</h2>
+            <h2 className="sl-cta-section-title">{modelCtaLabel}</h2>
             <p className="sl-cta-section-desc">{t('supportLadder.hero.subtitle')}</p>
             <Link href="/support-ladder/interactive" className="sl-cta-section-btn">
-              {t('nav.useModelWithStudents')} <ArrowRight size={16} />
+              {modelCtaLabel} <ArrowRight size={16} />
             </Link>
           </div>
         </motion.div>

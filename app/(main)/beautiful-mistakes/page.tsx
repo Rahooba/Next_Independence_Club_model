@@ -34,6 +34,7 @@ const stepBgs = ['var(--bm-step-bg-1)', 'var(--bm-step-bg-2)', 'var(--bm-step-bg
 const BeautifulMistakes = () => {
   const { t, dir } = useTranslation();
   const { user, profile } = useUser();
+  const modelCtaLabel = profile?.role === 'student' ? t('nav.joinModelWithTeacher') : t('nav.useModelWithStudents');
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
@@ -230,7 +231,7 @@ const BeautifulMistakes = () => {
 
             <motion.div variants={fadeUp}>
               <Link href="/beautiful-mistakes/interactive" className="bm-hero-cta">
-                {t('nav.useModelWithStudents')}
+                {modelCtaLabel}
                 {dir === 'rtl' ? <ArrowLeft size={16} strokeWidth={2.5} /> : <ArrowRight size={16} strokeWidth={2.5} />}
               </Link>
             </motion.div>
@@ -344,7 +345,7 @@ const BeautifulMistakes = () => {
   {t('beautifulMistakes.hero.subtitle')}
 </p>
             <Link href="/beautiful-mistakes/interactive" className="bm-cta-btn">
-              {t('nav.useModelWithStudents')}
+              {modelCtaLabel}
               {dir === 'rtl' ? <ArrowLeft size={16} strokeWidth={2.5} /> : <ArrowRight size={16} strokeWidth={2.5} />}
             </Link>
           </div>

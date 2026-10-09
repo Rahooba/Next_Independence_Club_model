@@ -58,6 +58,7 @@ export type TranslationKey =
   | 'nav.backToMain'
   | 'nav.useModel'
   | 'nav.useModelWithStudents'
+  | 'nav.joinModelWithTeacher'
   | 'dashboard'
 
   | 'logo.title'

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useUser } from '@/hooks/useUser';
 import {
   ArrowLeft, ArrowRight, MessageSquare, Eye, Hand,
   CircleCheck, CircleAlert, CircleX, Sparkles, Lightbulb,
@@ -17,6 +18,8 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } } 
 
 export default function SilentCardsPage() {
   const { t } = useTranslation();
+  const { profile } = useUser();
+  const modelCtaLabel = profile?.role === 'student' ? t('nav.joinModelWithTeacher') : t('nav.useModelWithStudents');
 
   const states = [
     {
@@ -63,7 +66,7 @@ export default function SilentCardsPage() {
 
             <motion.div variants={fadeUp} className="sc-hero-actions">
               <Link href="/silent-cards/interactive" className="sc-hero-cta">
-                {t('nav.useModelWithStudents')} <ArrowRight size={16} />
+                {modelCtaLabel} <ArrowRight size={16} />
               </Link>
               <Link href="/home" className="sc-hero-ghost">
                 <ArrowLeft size={16} /> {t('common.backToHome')}
@@ -159,10 +162,10 @@ export default function SilentCardsPage() {
           <div className="sc-cta-section-glow sc-cta-section-glow--1" />
           <div className="sc-cta-section-glow sc-cta-section-glow--2" />
           <div className="sc-cta-section-content">
-            <h2 className="sc-cta-section-title">{t('nav.useModelWithStudents')}</h2>
+            <h2 className="sc-cta-section-title">{modelCtaLabel}</h2>
             <p className="sc-cta-section-desc">{t('silentCards.hero.subtitle')}</p>
             <Link href="/silent-cards/interactive" className="sc-cta-section-btn">
-              {t('nav.useModelWithStudents')} <ArrowRight size={16} />
+              {modelCtaLabel} <ArrowRight size={16} />
             </Link>
           </div>
         </motion.div>

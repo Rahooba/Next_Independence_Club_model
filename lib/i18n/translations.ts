@@ -59,6 +59,7 @@ const translations: Translations = {
     'nav.backToMain': '← Back to Main',
     'nav.useModel': 'Use Model →',
     'nav.useModelWithStudents': 'Use This Model with Students',
+    'nav.joinModelWithTeacher': 'Join the Model with Your Teacher',
     'dashboard': 'Dashboard',
 
     'logo.title': 'Independence Club',
@@ -715,6 +716,7 @@ const translations: Translations = {
     'nav.backToMain': '← العودة إلى الرئيسية',
     'nav.useModel': 'استخدم النموذج →',
     'nav.useModelWithStudents': 'استخدم النموذج مع الطلاب',
+    'nav.joinModelWithTeacher': 'انضم للنموذج مع معلمك',
     'dashboard': 'الداشبورد',
 
     'logo.title': 'نادي الاستقلالية',

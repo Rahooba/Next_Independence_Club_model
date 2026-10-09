@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useUser } from '@/hooks/useUser';
 import {
   ArrowRight, ArrowLeft, Sparkles, Clock, Zap, ShieldCheck,
   Timer, Monitor, Smartphone, MonitorCheck,
@@ -43,6 +44,8 @@ function FloatingDot({ x, y, size, delay }: { x: string; y: string; size: number
 
 export default function Model101010Page() {
   const { t } = useTranslation();
+  const { profile } = useUser();
+  const modelCtaLabel = profile?.role === 'student' ? t('nav.joinModelWithTeacher') : t('nav.useModelWithStudents');
 
   const phases = [
     {
@@ -129,7 +132,7 @@ export default function Model101010Page() {
             </motion.div>
             <motion.div variants={fadeUp}>
               <Link href="/model-10-10-10/interactive" className="m10-hero2-cta">
-                {t('nav.useModelWithStudents')} <ArrowRight size={16} />
+                {modelCtaLabel} <ArrowRight size={16} />
               </Link>
             </motion.div>
           </div>
@@ -271,10 +274,10 @@ export default function Model101010Page() {
         >
           <div className="m10-cta2-bg" />
           <div className="m10-cta2-content">
-            <h2>{t('nav.useModelWithStudents')}</h2>
+            <h2>{modelCtaLabel}</h2>
             <p>{t('model101010.infoDesc')}</p>
             <Link href="/model-10-10-10/interactive" className="m10-cta2-btn">
-              {t('nav.useModelWithStudents')} <ArrowRight size={16} />
+              {modelCtaLabel} <ArrowRight size={16} />
             </Link>
           </div>
           <div className="m10-cta2-illust">

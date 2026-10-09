@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BrText } from '@/components/i18n/BrText';
+import { playSound } from '@/lib/client/sounds';
+import { trackStudentActivity } from '@/lib/client/tracking';
 import {
   ArrowLeft, MessageSquare, QrCode, UserRound,
   RefreshCcw, Trash2, Lock, CheckCircle, CircleAlert,
@@ -28,6 +30,8 @@ export default function SilentCardsInteractivePage() {
   const [teacherMessage, setTeacherMessage] = useState('');
   const [teacherType, setTeacherType] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const roleRef = useRef<string | undefined>(undefined);
+  useEffect(() => { roleRef.current = profile?.role; }, [profile?.role]);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -49,7 +53,18 @@ export default function SilentCardsInteractivePage() {
         });
       }
     };
-    insertCardIfNotExists();
+    const ensureStats = async () => {
+      // الطالب يظهر عند المعلم أول ما يدخل النموذج
+      if (profile.role === 'teacher' || profile.role === 'admin') return;
+      await trackStudentActivity({
+        studentId: user.id,
+        studentName: profile.full_name || user.email?.split('@')[0] || 'غير محدد',
+        model: 'silent_cards',
+        action: 'دخل نموذج البطاقات الصامتة',
+        onlyIfNew: true,
+      });
+    };
+    insertCardIfNotExists().then(ensureStats).catch((e) => console.error('join failed:', e));
   }, [user, profile]);
 
   // Fetch ALL silent_cards and subscribe to realtime
@@ -61,7 +76,14 @@ export default function SilentCardsInteractivePage() {
     fetchSilentCards();
     const channel = supabase
       .channel('silent_cards_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'silent_cards' }, () => fetchSilentCards())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'silent_cards' }, (payload: any) => {
+        fetchSilentCards();
+        // Teacher hears a sound (by card colour) when a student picks a card
+        const picked = payload?.new?.selected_card;
+        if (roleRef.current === 'teacher' && picked && payload?.old?.selected_card !== picked) {
+          if (picked === 'green' || picked === 'yellow' || picked === 'red') playSound(picked);
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
@@ -94,23 +116,20 @@ export default function SilentCardsInteractivePage() {
       .from('silent_cards')
       .update({ selected_card: cardType, selected_at: new Date().toISOString() })
       .eq('student_id', studentId);
-    if (updateError) return;
+    if (updateError) { console.error('[silent_cards] update failed:', updateError); return; }
 
-    await supabase.from('silent_card_logs').insert({
+    // Sound feedback depending on the card colour
+    if (cardType === 'green' || cardType === 'yellow' || cardType === 'red') playSound(cardType);
+
+    const { error: logErr } = await supabase.from('silent_card_logs').insert({
       student_id: studentId, student_name: card.student_name, card_type: cardType,
     });
+    if (logErr) console.error('[silent_card_logs] insert failed:', logErr);
 
-    await supabase.from('student_activity_log').insert({
-      student_id: studentId, student_name: card.student_name,
-      action: `اختار بطاقة ${cardType}`, model: 'silent_cards',
+    await trackStudentActivity({
+      studentId, studentName: card.student_name, model: 'silent_cards',
+      action: `اختار بطاقة ${cardType}`, increment: 'cards_selected',
     });
-
-    const { data: currentStats } = await supabase.from('student_stats')
-      .select('cards_selected').eq('student_id', studentId).eq('model', 'silent_cards').maybeSingle();
-    await supabase.from('student_stats').upsert({
-      student_id: studentId, student_name: card.student_name, model: 'silent_cards',
-      cards_selected: (currentStats?.cards_selected || 0) + 1, last_activity_at: new Date().toISOString(),
-    }, { onConflict: 'student_id,model' });
   };
 
   const handleResetAll = async () => {

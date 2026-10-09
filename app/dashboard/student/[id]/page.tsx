@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { playSound } from '@/lib/client/sounds';
 import { useUser } from '@/hooks/useUser';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTheme } from '@/hooks/useTheme';
@@ -51,8 +52,11 @@ const StudentDetailPage = () => {
 
     const activityChannel = supabase
       .channel('student_activity_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_activity_log', filter: `student_id=eq.${studentId}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_activity_log', filter: `student_id=eq.${studentId}` }, (payload: any) => {
         fetchStudentData();
+        if (payload?.eventType === 'INSERT' && typeof payload?.new?.action === 'string' && payload.new.action.includes('أنهى الخطوة')) {
+          playSound('notify');
+        }
       })
       .subscribe();
 

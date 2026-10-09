@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
+import { playSound } from '@/lib/client/sounds';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTheme } from '@/hooks/useTheme';
 import { useDashboard } from '@/providers/DashboardProvider';
@@ -119,6 +120,20 @@ const DashboardPage = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Teacher hears a notification when any student finishes a support-ladder step
+  useEffect(() => {
+    const ch = supabase
+      .channel('dashboard_step_notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_activity_log' }, (payload: any) => {
+        const row = payload?.new;
+        if (row?.model === 'support_ladder' && typeof row?.action === 'string' && row.action.includes('أنهى الخطوة')) {
+          playSound('notify');
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
   useEffect(() => {

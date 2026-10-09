@@ -1,11 +1,18 @@
 ﻿'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useUser } from '@/hooks/useUser';
+import { trackStudentActivity } from '@/lib/client/tracking';
+import { playSound } from '@/lib/client/sounds';
+import { computeStepsByStudent } from '@/lib/client/ladderProgress';
+import { BrText } from '@/components/i18n/BrText';
+import { supabase } from '@/lib/supabase';
 
 const SupportLadderSteps = () => {
   const { t, dir } = useTranslation();
+  const { user, profile } = useUser();
 
   const steps = [
     {
@@ -76,6 +83,7 @@ const SupportLadderSteps = () => {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
   const [celebrateAll, setCelebrateAll] = useState(false);
+  const interacted = useRef(false); // الاحتفال بس بعد ما الطالب يضغط بنفسه
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -84,19 +92,52 @@ const SupportLadderSteps = () => {
   }, []);
 
   useEffect(() => {
-    if (checkedSteps.length === steps.length) {
+    if (interacted.current && checkedSteps.length === steps.length) {
       setCelebrateAll(true);
+      playSound('celebrate');
       const t = setTimeout(() => setCelebrateAll(false), 4000);
       return () => clearTimeout(t);
     }
   }, [checkedSteps]);
 
+  // استرجاع تقدّم الطالب السابق علشان يطابق اللي المعلم شايفه
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('student_activity_log')
+        .select('student_id, action, activity_time')
+        .eq('student_id', user.id)
+        .eq('model', 'support_ladder')
+        .like('action', '%الخطوة%');
+      if (error) { console.error('[steps] load progress failed:', error.message); return; }
+      const done = computeStepsByStudent((data || []) as any).get(user.id);
+      if (done && done.size) {
+        setCheckedSteps(Array.from(done).map(n => n - 1).filter(i => i >= 0 && i < 5));
+      }
+    })();
+  }, [user]);
+
   const isMobile = windowWidth < 768;
 
+  // Save the finished step so the teacher can see it on the dashboard
+  const logStepDone = async (index: number, undo = false) => {
+    if (!user) return; // not logged in → nothing to record
+    const name = profile?.full_name || user.email?.split('@')[0] || 'غير محدد';
+    await trackStudentActivity({
+      studentId: user.id, studentName: name, model: 'support_ladder',
+      action: `${undo ? 'ألغى' : 'أنهى'} الخطوة ${steps[index].number} في سلم الدعم`,
+    });
+  };
+
   const toggleCheck = (index: number) => {
+    const willCheck = !checkedSteps.includes(index);
     setCheckedSteps(prev =>
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
+    interacted.current = true;
+    if (willCheck) playSound('step');
+    logStepDone(index, !willCheck);
   };
 
   const progress = Math.round((checkedSteps.length / steps.length) * 100);
@@ -149,7 +190,7 @@ const SupportLadderSteps = () => {
           {t('supportLadderSteps.hero.title')}
         </h1>
         <p style={{ fontSize: isMobile ? '0.88rem' : '1rem', opacity: 0.9, maxWidth: 500, margin: '0 auto', lineHeight: 1.7 }}>
-          {t('supportLadderSteps.hero.subtitle')}
+          <BrText text={t('supportLadderSteps.hero.subtitle')} />
         </p>
 
         {/* Progress bar */}
